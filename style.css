@@ -15,26 +15,28 @@
 }
 
 body.theme-yellow {
-    --bg-color: #fdf3e5; /* Soft paper */
-    --surface-color: #fefaf0; /* Slightly lighter paper for cards */
-    --text-color: #584c3e; /* Muted dark brown */
-    --subtle-text-color: #8e7f70; /* Softer brown-gray */
-    --primary-color: #b5835a; /* Muted ochre/brown */
-    --primary-light-color: #e9e2d9; /* Light warm gray/beige */
-    --accent-color: #c89b4a; /* Muted gold for stars */
-    --border-color: #e5dace; /* Subtle border */
-    --completed-color: #8e7f70; /* Same as subtle text */
+    /* Eye-comfort sepia theme */
+    --bg-color: #f4f1e9;
+    --surface-color: #faf8f2;
+    --text-color: #4a443d;
+    --subtle-text-color: #8c857b;
+    --primary-color: #8d6e63;
+    --primary-light-color: #e6e2dc;
+    --accent-color: #b8914b;
+    --border-color: #dcd8d0;
+    --completed-color: #a9a299;
 }
 
 body.theme-dark {
-    --bg-color: #121212; /* Softer black */
-    --surface-color: #1e1e1e; /* Elevated surfaces */
+    /* AMOLED True Black Theme */
+    --bg-color: #000000;
+    --surface-color: #000000;
     --text-color: #e2e8f0;
     --subtle-text-color: #a0aec0;
     --primary-color: #60a5fa;
-    --primary-light-color: #2d3748; /* Adjusted for new bg */
+    --primary-light-color: #1e293b; /* Dark blue-grey */
     --accent-color: #facc15;
-    --border-color: #374151;
+    --border-color: #27272a; /* Subtle border for contrast on black */
     --completed-color: #718096;
 }
 
@@ -296,8 +298,8 @@ input[type="checkbox"] {
     cursor: pointer;
 }
 .theme-btn[data-theme="light"] { background-color: #f4f7f9; }
-.theme-btn[data-theme="yellow"] { background-color: #fdf3e5; }
-.theme-btn[data-theme="dark"] { background-color: #1e1e1e; }
+.theme-btn[data-theme="yellow"] { background-color: #f4f1e9; }
+.theme-btn[data-theme="dark"] { background-color: #000000; }
 .theme-btn.active {
     border-color: var(--primary-color);
 }
@@ -427,7 +429,7 @@ input[type="checkbox"] {
 }
 
 body.theme-dark .toast {
-    color: #111; /* Darker text for better contrast on light blue */
+    color: #000; /* Ensure text is black for better contrast on light blue */
 }
 
 
