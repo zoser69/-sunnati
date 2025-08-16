@@ -1,27 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 
-// Type declarations for non-standard Notification Triggers API
-// This allows TypeScript to recognize properties for scheduled notifications.
-interface TimestampTrigger {
-    // This is an opaque type for the trigger object.
-}
-
-declare global {
-    interface Window {
-        TimestampTrigger: new (timestamp: number) => TimestampTrigger;
-    }
-
-    // Augment existing interfaces from the DOM library
-    interface NotificationOptions {
-        showTrigger?: TimestampTrigger;
-    }
-
-    interface GetNotificationOptions {
-        includeTriggered?: boolean;
-    }
-}
-
 // ==== DATA ====
 const sunnahData = [
     {
@@ -142,66 +121,54 @@ const getYesterdayDateString = () => {
 
 // ==== Notification Functions ====
 const NOTIFICATION_SETTINGS_KEY = 'sunnati-notification-settings';
+const LAST_MORNING_NOTIFICATION_KEY = 'sunnati-last-morning-notification';
+const LAST_FRIDAY_NOTIFICATION_KEY = 'sunnati-last-friday-notification';
 
-const getNextTimestamp = (targetHour: number, targetMinute: number, targetDate: Date) => {
-    const targetDateTime = new Date(targetDate);
-    // We create the date object based on the Cairo timezone by manually setting UTC hours.
-    // Cairo is UTC+2 or UTC+3 depending on DST. Let's assume UTC+3 for current DST.
-    // A robust solution would dynamically check offset, but for simplicity let's use UTC+3 as Cairo is mostly on it.
-    targetDateTime.setUTCHours(targetHour - 3, targetMinute, 0, 0);
-
-    if (targetDateTime.getTime() < Date.now()) {
-        targetDateTime.setUTCDate(targetDateTime.getUTCDate() + 1);
-    }
-    return targetDateTime.getTime();
-};
-
-
-const scheduleReminders = async (times: { morning: string, friday: string }) => {
-    const registration = await navigator.serviceWorker.ready;
+// This function now triggers notifications on app open if conditions are met.
+const handleDailyNotifications = async () => {
+    const settingsStr = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+    if (!settingsStr) return;
     
-    // Clear previously scheduled notifications
-    const notifications = await registration.getNotifications({ includeTriggered: true });
-    notifications.forEach(notification => notification.close());
+    const settings = JSON.parse(settingsStr);
+    if (!settings.enabled || !('Notification' in window) || Notification.permission !== 'granted') {
+        return;
+    }
 
-    const [morningHour, morningMinute] = times.morning.split(':').map(Number);
-    const [fridayHour, fridayMinute] = times.friday.split(':').map(Number);
+    const now = new Date();
+    const todayStr = getTodayDateString();
+    const registration = await navigator.serviceWorker.ready;
 
-    // Schedule for the next 7 days
-    for (let i = 0; i < 7; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-
-        // Schedule morning reminder
-        const morningTimestamp = getNextTimestamp(morningHour, morningMinute, date);
-        registration.showNotification('☀️ سنن الصباح', {
-            body: 'لا تنسى أذكار الصباح وسنن الاستيقاظ. ابدأ يومك ببركة.',
-            tag: `morning-reminder-${i}`,
-            showTrigger: new window.TimestampTrigger(morningTimestamp),
-            icon: '/images/icon-192.png',
-        });
-
-        // Schedule Friday reminder if the day is Friday (5)
-        if (date.getDay() === 5) {
-             const fridayTimestamp = getNextTimestamp(fridayHour, fridayMinute, date);
-             registration.showNotification('🕌 سنن يوم الجمعة', {
-                body: 'جمعة مباركة! أكثر من الصلاة على النبي واقرأ سورة الكهف.',
-                tag: `friday-reminder-${i}`,
-                showTrigger: new window.TimestampTrigger(fridayTimestamp),
+    // Check for Morning Reminder
+    const lastMorningDate = localStorage.getItem(LAST_MORNING_NOTIFICATION_KEY);
+    if (lastMorningDate !== todayStr) {
+        const [hour, minute] = settings.times.morning.split(':').map(Number);
+        if (now.getHours() > hour || (now.getHours() === hour && now.getMinutes() >= minute)) {
+            registration.showNotification('☀️ سنن الصباح', {
+                body: 'لا تنسى أذكار الصباح وسنن الاستيقاظ. ابدأ يومك ببركة.',
+                tag: `morning-reminder-${todayStr}`,
                 icon: '/images/icon-192.png',
             });
+            localStorage.setItem(LAST_MORNING_NOTIFICATION_KEY, todayStr);
         }
     }
-     setToastMessage('تم حفظ وتحديث جدول التذكيرات.');
+
+    // Check for Friday Reminder (if today is Friday)
+    if (now.getDay() === 5) {
+        const lastFridayDate = localStorage.getItem(LAST_FRIDAY_NOTIFICATION_KEY);
+        if (lastFridayDate !== todayStr) {
+            const [hour, minute] = settings.times.friday.split(':').map(Number);
+            if (now.getHours() > hour || (now.getHours() === hour && now.getMinutes() >= minute)) {
+                registration.showNotification('🕌 سنن يوم الجمعة', {
+                    body: 'جمعة مباركة! أكثر من الصلاة على النبي واقرأ سورة الكهف.',
+                    tag: `friday-reminder-${todayStr}`,
+                    icon: '/images/icon-192.png',
+                });
+                localStorage.setItem(LAST_FRIDAY_NOTIFICATION_KEY, todayStr);
+            }
+        }
+    }
 };
 
-const cancelReminders = async () => {
-    if (!('serviceWorker' in navigator)) return;
-    const registration = await navigator.serviceWorker.ready;
-    const notifications = await registration.getNotifications({ includeTriggered: true });
-    notifications.forEach(notification => notification.close());
-    setToastMessage('تم إلغاء جميع التذكيرات.');
-};
 
 const sendTestNotification = () => {
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -211,8 +178,9 @@ const sendTestNotification = () => {
                 icon: '/images/icon-192.png'
             });
         });
+        setToastMessage('تم إرسال إشعار تجريبي.');
     } else {
-        alert('يرجى السماح بالإشعارات أولاً.');
+        setToastMessage('يرجى السماح بالإشعارات أولاً.');
     }
 };
 
@@ -235,7 +203,6 @@ const App = () => {
         enabled: false,
         times: { morning: '07:00', friday: '08:00' }
     });
-    const [isSchedulingSupported, setIsSchedulingSupported] = useState(true);
 
     setToastMessage = setToastMessageState;
 
@@ -269,16 +236,15 @@ const App = () => {
             setStreak({ count: 0, lastCompletedDate: null });
         }
         
-        // Check for scheduling support
-        if (!('Notification' in window) || !('serviceWorker' in navigator) || !('showTrigger' in Notification.prototype)) {
-            setIsSchedulingSupported(false);
-        }
-
-        // Register Service Worker
+        // Register Service Worker & Handle Notifications
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => console.log('ServiceWorker registration successful'))
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                        // Once registered, check for daily notifications
+                        handleDailyNotifications();
+                    })
                     .catch(err => console.log('ServiceWorker registration failed: ', err));
             });
         }
@@ -379,26 +345,26 @@ const App = () => {
     
     const handleNotifToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const isEnabled = e.target.checked;
+        const newSettings = { ...notificationSettings, enabled: isEnabled };
+        
         if (isEnabled) {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
-                setNotificationSettings(prev => ({ ...prev, enabled: true }));
-                scheduleReminders(notificationSettings.times);
+                setNotificationSettings(newSettings);
+                setToastMessage('تم تفعيل التذكيرات بنجاح.');
             } else {
-                setToastMessageState('تم رفض إذن الإشعارات.');
+                 setToastMessage('تم رفض إذن الإشعارات.');
             }
         } else {
-            setNotificationSettings(prev => ({ ...prev, enabled: false }));
-            cancelReminders();
+            setNotificationSettings(newSettings);
+            setToastMessage('تم إيقاف التذكيرات.');
         }
     };
 
     const handleTimeChange = (type: 'morning' | 'friday', value: string) => {
         const newTimes = { ...notificationSettings.times, [type]: value };
         setNotificationSettings(prev => ({ ...prev, times: newTimes }));
-        if (notificationSettings.enabled) {
-            scheduleReminders(newTimes);
-        }
+        setToastMessage('تم حفظ الوقت الجديد.');
     };
 
 
@@ -493,33 +459,28 @@ const App = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                          <button className="modal-close-btn" onClick={() => setIsNotificationModalOpen(false)}>&times;</button>
                          <h3>إعدادات الإشعارات</h3>
-                         {isSchedulingSupported ? (
-                             <>
-                                <div className="setting-row">
-                                    <label htmlFor="notif-toggle">تفعيل التذكيرات اليومية</label>
-                                    <input type="checkbox" id="notif-toggle" className="toggle-switch" checked={notificationSettings.enabled} onChange={handleNotifToggle} />
-                                </div>
-                                {notificationSettings.enabled && (
-                                    <>
-                                        <div className="setting-row">
-                                            <label htmlFor="morning-time">وقت تذكير الصباح</label>
-                                            <input type="time" id="morning-time" value={notificationSettings.times.morning} onChange={e => handleTimeChange('morning', e.target.value)} />
-                                        </div>
-                                        <div className="setting-row">
-                                            <label htmlFor="friday-time">وقت تذكير الجمعة</label>
-                                            <input type="time" id="friday-time" value={notificationSettings.times.friday} onChange={e => handleTimeChange('friday', e.target.value)} />
-                                        </div>
-                                        <p className="timezone-info">جميع الأوقات حسب توقيت القاهرة.</p>
-                                        <button className="modal-action-btn" onClick={sendTestNotification}>إرسال إشعار تجريبي</button>
-                                    </>
-                                )}
-                             </>
-                         ) : (
-                            <div className="feature-unsupported">
-                                <p>عذراً، ميزة التذكيرات المجدولة غير مدعومة في نسخة المتصفح الحالية لديك.</p>
-                                <p>للاستفادة من هذه الميزة، يرجى محاولة تحديث متصفح Chrome إلى آخر إصدار.</p>
+                        <>
+                            <div className="setting-row">
+                                <label htmlFor="notif-toggle">تفعيل التذكيرات</label>
+                                <input type="checkbox" id="notif-toggle" className="toggle-switch" checked={notificationSettings.enabled} onChange={handleNotifToggle} />
                             </div>
-                         )}
+                            {notificationSettings.enabled && (
+                                <>
+                                    <div className="setting-row">
+                                        <label htmlFor="morning-time">وقت تذكير الصباح</label>
+                                        <input type="time" id="morning-time" value={notificationSettings.times.morning} onChange={e => handleTimeChange('morning', e.target.value)} />
+                                    </div>
+                                    <div className="setting-row">
+                                        <label htmlFor="friday-time">وقت تذكير الجمعة</label>
+                                        <input type="time" id="friday-time" value={notificationSettings.times.friday} onChange={e => handleTimeChange('friday', e.target.value)} />
+                                    </div>
+                                    <p className="timezone-info">
+                                        سيظهر الإشعار عند أول فتح للتطبيق بعد الوقت المحدد.
+                                    </p>
+                                    <button className="modal-action-btn" onClick={sendTestNotification}>إرسال إشعار تجريبي</button>
+                                </>
+                            )}
+                        </>
                     </div>
                 </div>
             )}
