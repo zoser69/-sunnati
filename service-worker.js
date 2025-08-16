@@ -10,9 +10,8 @@ const URLS_TO_CACHE = [
     '/style.css',
     '/index.tsx',
     '/manifest.json',
-    '/images/icon-192.svg',
-    '/images/icon-512.svg',
-    '/images/apple-touch-icon.svg'
+    '/images/icon-192.png',
+    '/images/icon-512.png'
 ];
 
 // Install event: open a cache and add the URLs to cache
