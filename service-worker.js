@@ -3,15 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const CACHE_NAME = 'sunnati-cache-v5'; // Bumped version to ensure update
+const CACHE_NAME = 'sunnati-cache-v7'; // Bumped version to ensure update
 const URLS_TO_CACHE = [
     '/',
     '/index.html',
     '/style.css',
     '/index.tsx',
-    '/manifest.json'
-    // Icons are referenced in manifest/html and will be cached by the browser.
-    // Removing from precache list to prevent SW installation failure if they are missing.
+    '/manifest.json',
+    '/images/icon-192.svg',
+    '/images/icon-512.svg',
+    '/images/apple-touch-icon.svg'
 ];
 
 // Install event: open a cache and add the URLs to cache
