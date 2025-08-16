@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const CACHE_NAME = 'sunnati-cache-v7'; // Bumped version to ensure update
+const CACHE_NAME = 'sunnati-cache-v8'; // Bumped version to ensure update
 const URLS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/index.tsx',
-    '/manifest.json',
-    '/images/icon-192.png',
-    '/images/icon-512.png'
+    './',
+    'index.html',
+    'style.css',
+    'index.tsx',
+    'manifest.json',
+    'images/icon-192.png',
+    'images/icon-512.png'
 ];
 
 // Install event: open a cache and add the URLs to cache
