@@ -7,17 +7,19 @@ interface TimestampTrigger {
     // This is an opaque type for the trigger object.
 }
 
-interface Window {
-    TimestampTrigger: new (timestamp: number) => TimestampTrigger;
-}
+declare global {
+    interface Window {
+        TimestampTrigger: new (timestamp: number) => TimestampTrigger;
+    }
 
-// Augment existing interfaces from the DOM library
-declare interface NotificationOptions {
-    showTrigger?: TimestampTrigger;
-}
+    // Augment existing interfaces from the DOM library
+    interface NotificationOptions {
+        showTrigger?: TimestampTrigger;
+    }
 
-declare interface GetNotificationOptions {
-    includeTriggered?: boolean;
+    interface GetNotificationOptions {
+        includeTriggered?: boolean;
+    }
 }
 
 // ==== DATA ====
@@ -87,7 +89,7 @@ const sunnahData = [
             { id: 'manners_2', text: 'التبسم والكلمة الطيبة', evidence: 'قال النبي صلى الله عليه وسلم: «تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ لَكَ صَدَقَةٌ». (سنن الترمذي 1956، حسنه الألباني) وقال: «وَالْكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ». (صحيح البخاري 2989)', source: 'سنن الترمذي و صحيح البخاري', virtue: 'كسب أجر الصدقة بأبسط الأفعال، ونشر المحبة بين الناس.' },
             { id: 'manners_3', text: 'إفشاء السلام', evidence: 'قال النبي صلى الله عليه وسلم: «...أَوَلاَ أَدُلُّكُمْ عَلَى شَيْءٍ إِذَا فَعَلْتُمُوهُ تَحَابَبْتُمْ؟ أَفْشُوا السَّلاَمَ بَيْنَكُمْ».', source: 'صحيح مسلم، حديث رقم 54. (صحيح)', virtue: 'سبب للمحبة والألفة بين المسلمين، وهو من أسباب دخول الجنة.' },
             { id: 'manners_4', text: 'دعاء الركوب والسفر', evidence: 'كان النبي صلى الله عليه وسلم إذا استوى على بعيره خارجًا إلى سفر كبر ثلاثًا ثم قال: «بِسْمِ اللهِ، الْحَمْدُ لِلَّهِ، {سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ * وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ}، الْحَمْدُ لِلَّهِ، الْحَمْدُ لِلَّهِ، الْحَمْدُ لِلَّهِ، اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، سُبْحَانَكَ إِنِّي ظَلَمْتُ نَفْسِي فَاغْفِرْ لِي، فَإِنَّهُ لا يَغْفِرُ الذُّنُوبَ إِلا أَنْتَ».', source: 'سنن أبي داود (2602). (صححه الألباني)', virtue: 'استشعار نعمة الله بتسخير الدابة أو المركبة، وطلب المغفرة.' },
-            { id: 'manners_5', text: 'دعاء كفارة المجلس', evidence: 'قال النبي صلى الله عليه وسلم: «من جلس في مجلس فكثر فيه لغطه، فقال قبل أن يقوم من مجلسه ذلك: سُبْحَانَكَ اللَّهُمَّ وَبِحْمَدِكَ، أَشْهَدُ أَنْ لا إِلَهَ إِلا أَنْتَ، أَسْتَغْفِرُكَ وَأَتُوبُ إِلَيْكَ، إلا غفر له ما كان في مجلسه ذلك».', source: 'سنن الترمذي (3433). (صححه الألباني)', virtue: 'يغفر الله به ما كان في المجلس من كلام لا فائدة فيه (اللغط).' }
+            { id: 'manners_5', text: 'دعاء كفارة المجلس', evidence: 'قال النبي صلى الله عليه وسلم: «من جلس في مجلس فكثر فيه لغطه، فقال قبل أن يقوم من مجلسه ذلك: سُبْحَانَكَ اللَّهُمَّ وَبِحْمَدِكَ، أَشْهَدُ أَنْ لا إِلَهَ إِلا أَنْتَ، أَسْتَغْفِرُكَ وَأتُوبُ إِلَيْكَ، إلا غفر له ما كان في مجلسه ذلك».', source: 'سنن الترمذي (3433). (صححه الألباني)', virtue: 'يغفر الله به ما كان في المجلس من كلام لا فائدة فيه (اللغط).' }
         ]
     },
     {
@@ -156,11 +158,6 @@ const getNextTimestamp = (targetHour: number, targetMinute: number, targetDate: 
 
 
 const scheduleReminders = async (times: { morning: string, friday: string }) => {
-    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('showTrigger' in Notification.prototype)) {
-        alert('عذراً، الإشعارات المجدولة غير مدعومة في متصفحك.');
-        return;
-    }
-
     const registration = await navigator.serviceWorker.ready;
     
     // Clear previously scheduled notifications
@@ -238,6 +235,7 @@ const App = () => {
         enabled: false,
         times: { morning: '07:00', friday: '08:00' }
     });
+    const [isSchedulingSupported, setIsSchedulingSupported] = useState(true);
 
     setToastMessage = setToastMessageState;
 
@@ -263,7 +261,6 @@ const App = () => {
             setNotificationSettings(savedNotifSettings);
         }
 
-
         // Streak
         const savedStreak = JSON.parse(localStorage.getItem('sunnati-streak') || '{"count": 0, "lastCompletedDate": null}');
         if (savedStreak.lastCompletedDate === getYesterdayDateString() || savedStreak.lastCompletedDate === todayStr) {
@@ -272,6 +269,11 @@ const App = () => {
             setStreak({ count: 0, lastCompletedDate: null });
         }
         
+        // Check for scheduling support
+        if (!('Notification' in window) || !('serviceWorker' in navigator) || !('showTrigger' in Notification.prototype)) {
+            setIsSchedulingSupported(false);
+        }
+
         // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -491,27 +493,33 @@ const App = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                          <button className="modal-close-btn" onClick={() => setIsNotificationModalOpen(false)}>&times;</button>
                          <h3>إعدادات الإشعارات</h3>
-                         <div className="setting-row">
-                             <label htmlFor="notif-toggle">تفعيل التذكيرات اليومية</label>
-                             <input type="checkbox" id="notif-toggle" className="toggle-switch" checked={notificationSettings.enabled} onChange={handleNotifToggle} />
-                         </div>
-                         {notificationSettings.enabled && (
+                         {isSchedulingSupported ? (
                              <>
                                 <div className="setting-row">
-                                     <label htmlFor="morning-time">وقت تذكير الصباح</label>
-                                     <input type="time" id="morning-time" value={notificationSettings.times.morning} onChange={e => handleTimeChange('morning', e.target.value)} />
-                                 </div>
-                                 <div className="setting-row">
-                                     <label htmlFor="friday-time">وقت تذكير الجمعة</label>
-                                     <input type="time" id="friday-time" value={notificationSettings.times.friday} onChange={e => handleTimeChange('friday', e.target.value)} />
-                                 </div>
-                                 <p className="timezone-info">جميع الأوقات حسب توقيت القاهرة.</p>
-                                 <button className="modal-action-btn" onClick={sendTestNotification}>إرسال إشعار تجريبي</button>
+                                    <label htmlFor="notif-toggle">تفعيل التذكيرات اليومية</label>
+                                    <input type="checkbox" id="notif-toggle" className="toggle-switch" checked={notificationSettings.enabled} onChange={handleNotifToggle} />
+                                </div>
+                                {notificationSettings.enabled && (
+                                    <>
+                                        <div className="setting-row">
+                                            <label htmlFor="morning-time">وقت تذكير الصباح</label>
+                                            <input type="time" id="morning-time" value={notificationSettings.times.morning} onChange={e => handleTimeChange('morning', e.target.value)} />
+                                        </div>
+                                        <div className="setting-row">
+                                            <label htmlFor="friday-time">وقت تذكير الجمعة</label>
+                                            <input type="time" id="friday-time" value={notificationSettings.times.friday} onChange={e => handleTimeChange('friday', e.target.value)} />
+                                        </div>
+                                        <p className="timezone-info">جميع الأوقات حسب توقيت القاهرة.</p>
+                                        <button className="modal-action-btn" onClick={sendTestNotification}>إرسال إشعار تجريبي</button>
+                                    </>
+                                )}
                              </>
+                         ) : (
+                            <div className="feature-unsupported">
+                                <p>عذراً، ميزة التذكيرات المجدولة غير مدعومة في نسخة المتصفح الحالية لديك.</p>
+                                <p>للاستفادة من هذه الميزة، يرجى محاولة تحديث متصفح Chrome إلى آخر إصدار.</p>
+                            </div>
                          )}
-                         {!('showTrigger' in (window.Notification?.prototype || {})) &&
-                            <p className="timezone-info warning">متصفحك لا يدعم جدولة الإشعارات بشكل كامل. قد لا تعمل الميزة كما هو متوقع.</p>
-                         }
                     </div>
                 </div>
             )}

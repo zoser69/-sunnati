@@ -441,9 +441,7 @@ input[type="time"] {
     padding: 0.5rem;
     border-radius: 6px;
 }
-.timezone-info.warning {
-    color: var(--danger-color);
-}
+
 .modal-action-btn {
     width: 100%;
     padding: 0.75rem;
@@ -457,6 +455,26 @@ input[type="time"] {
     font-weight: 700;
     cursor: pointer;
 }
+
+.feature-unsupported {
+    padding: 1rem;
+    text-align: center;
+    background-color: var(--bg-color);
+    border-radius: 8px;
+}
+.feature-unsupported p {
+    line-height: 1.7;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--danger-color);
+    margin-bottom: 0.75rem;
+}
+.feature-unsupported p + p {
+    color: var(--subtle-text-color);
+    font-weight: 400;
+    margin-bottom: 0;
+}
+
 
 /* Nice Toggle Switch */
 .toggle-switch {
