@@ -3,13 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const CACHE_NAME = 'sunnati-cache-v3'; // Bumped version for React migration
+const CACHE_NAME = 'sunnati-cache-v4'; // Bumped version for new icons
 const URLS_TO_CACHE = [
     '/',
     '/index.html',
     '/style.css',
-    '/index.tsx', // Cache the new main script
-    '/manifest.json'
+    '/index.tsx',
+    '/manifest.json',
+    '/images/icon-192.png',
+    '/images/icon-512.png',
+    '/images/apple-touch-icon.png'
 ];
 
 // Install event: open a cache and add the URLs to cache
