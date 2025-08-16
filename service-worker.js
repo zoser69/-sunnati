@@ -3,15 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const CACHE_NAME = 'sunnati-cache-v1';
+const CACHE_NAME = 'sunnati-cache-v3'; // Bumped version for React migration
 const URLS_TO_CACHE = [
     '/',
     '/index.html',
     '/style.css',
-    '/script.js',
-    '/manifest.json',
-    'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap',
-    'https://fonts.gstatic.com/s/tajawal/v9/Iura6YBj_oCad4k1nzSBC45I.woff2' // Example font file, actual URL might differ
+    '/index.tsx', // Cache the new main script
+    '/manifest.json'
 ];
 
 // Install event: open a cache and add the URLs to cache

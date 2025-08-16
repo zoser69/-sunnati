@@ -17,57 +17,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.1/",
+    "react": "https://esm.sh/react@^19.1.1",
+    "react-dom": "https://esm.sh/react-dom@^19.1.1",
+    "react-dom/client": "https://esm.sh/react-dom@^19.1.1/client",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/"
+  }
+}
+</script>
 </head>
 <body class="theme-light">
 
-    <header class="app-header">
-        <div class="header-top">
-            <h1>سنتي | Sunnati</h1>
-            <div id="streak-counter" title="الأيام المتتالية">
-                <span id="streak-count">0</span> 🔥
-            </div>
-        </div>
-        <div class="progress-container" title="نسبة الإنجاز اليومي">
-            <div class="progress-bar">
-                <div id="progress-indicator" class="progress-indicator"></div>
-            </div>
-            <span id="progress-percentage">0%</span>
-        </div>
-        <div class="sunnah-of-the-week">
-            <h3>⭐ سنة الأسبوع</h3>
-            <p>التبسم في وجه أخيك صدقة.</p>
-        </div>
-    </header>
+    <div id="root"></div>
 
-    <main id="sunnah-list-container">
-        <!-- Sunnah categories will be injected here by JavaScript -->
-    </main>
-
-    <footer class="app-footer">
-        <div class="footer-controls">
-            <div class="theme-switcher">
-                <button class="theme-btn" data-theme="light" title="الثيم الفاتح"></button>
-                <button class="theme-btn" data-theme="yellow" title="الثيم الأصفر"></button>
-                <button class="theme-btn" data-theme="dark" title="الثيم الداكن"></button>
-            </div>
-            <button id="customize-btn" class="control-btn" title="عرض قائمتي اليومية المخصصة">⭐ سنني اليومية</button>
-        </div>
-        <p class="copyright">&copy; 2024 سنتي | Sunnati. كل الحقوق محفوظة.</p>
-    </footer>
-
-    <!-- Info Modal -->
-    <div id="info-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button id="modal-close-btn" class="modal-close-btn">&times;</button>
-            <h3 id="modal-title"></h3>
-            <blockquote id="modal-evidence"></blockquote>
-            <p id="modal-source"></p>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast-notification" class="toast"></div>
-
-    <script src="script.js"></script>
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>
