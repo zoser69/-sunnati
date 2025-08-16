@@ -1,6 +1,24 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
+
+// Type declarations for non-standard Notification Triggers API
+// This allows TypeScript to recognize properties for scheduled notifications.
+interface TimestampTrigger {
+    // This is an opaque type for the trigger object.
+}
+
+interface Window {
+    TimestampTrigger: new (timestamp: number) => TimestampTrigger;
+}
+
+// Augment existing interfaces from the DOM library
+declare interface NotificationOptions {
+    showTrigger?: TimestampTrigger;
+}
+
+declare interface GetNotificationOptions {
+    includeTriggered?: boolean;
+}
 
 // ==== DATA ====
 const sunnahData = [
@@ -120,6 +138,90 @@ const getYesterdayDateString = () => {
     return `${yesterday.getFullYear()}-${yesterday.getMonth() + 1}-${yesterday.getDate()}`;
 };
 
+// ==== Notification Functions ====
+const NOTIFICATION_SETTINGS_KEY = 'sunnati-notification-settings';
+
+const getNextTimestamp = (targetHour: number, targetMinute: number, targetDate: Date) => {
+    const targetDateTime = new Date(targetDate);
+    // We create the date object based on the Cairo timezone by manually setting UTC hours.
+    // Cairo is UTC+2 or UTC+3 depending on DST. Let's assume UTC+3 for current DST.
+    // A robust solution would dynamically check offset, but for simplicity let's use UTC+3 as Cairo is mostly on it.
+    targetDateTime.setUTCHours(targetHour - 3, targetMinute, 0, 0);
+
+    if (targetDateTime.getTime() < Date.now()) {
+        targetDateTime.setUTCDate(targetDateTime.getUTCDate() + 1);
+    }
+    return targetDateTime.getTime();
+};
+
+
+const scheduleReminders = async (times: { morning: string, friday: string }) => {
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('showTrigger' in Notification.prototype)) {
+        alert('عذراً، الإشعارات المجدولة غير مدعومة في متصفحك.');
+        return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    
+    // Clear previously scheduled notifications
+    const notifications = await registration.getNotifications({ includeTriggered: true });
+    notifications.forEach(notification => notification.close());
+
+    const [morningHour, morningMinute] = times.morning.split(':').map(Number);
+    const [fridayHour, fridayMinute] = times.friday.split(':').map(Number);
+
+    // Schedule for the next 7 days
+    for (let i = 0; i < 7; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+
+        // Schedule morning reminder
+        const morningTimestamp = getNextTimestamp(morningHour, morningMinute, date);
+        registration.showNotification('☀️ سنن الصباح', {
+            body: 'لا تنسى أذكار الصباح وسنن الاستيقاظ. ابدأ يومك ببركة.',
+            tag: `morning-reminder-${i}`,
+            showTrigger: new window.TimestampTrigger(morningTimestamp),
+            icon: '/images/icon-192.png',
+        });
+
+        // Schedule Friday reminder if the day is Friday (5)
+        if (date.getDay() === 5) {
+             const fridayTimestamp = getNextTimestamp(fridayHour, fridayMinute, date);
+             registration.showNotification('🕌 سنن يوم الجمعة', {
+                body: 'جمعة مباركة! أكثر من الصلاة على النبي واقرأ سورة الكهف.',
+                tag: `friday-reminder-${i}`,
+                showTrigger: new window.TimestampTrigger(fridayTimestamp),
+                icon: '/images/icon-192.png',
+            });
+        }
+    }
+     setToastMessage('تم حفظ وتحديث جدول التذكيرات.');
+};
+
+const cancelReminders = async () => {
+    if (!('serviceWorker' in navigator)) return;
+    const registration = await navigator.serviceWorker.ready;
+    const notifications = await registration.getNotifications({ includeTriggered: true });
+    notifications.forEach(notification => notification.close());
+    setToastMessage('تم إلغاء جميع التذكيرات.');
+};
+
+const sendTestNotification = () => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification('🔔 إشعار تجريبي', {
+                body: 'إذا رأيت هذا الإشعار، فكل شيء يعمل بنجاح!',
+                icon: '/images/icon-192.png'
+            });
+        });
+    } else {
+        alert('يرجى السماح بالإشعارات أولاً.');
+    }
+};
+
+let setToastMessage: (message: string) => void = () => {};
+
+
 // ==== React Components ====
 const App = () => {
     // State
@@ -129,8 +231,15 @@ const App = () => {
     const [theme, setTheme] = useState('light');
     const [customizeMode, setCustomizeMode] = useState(false);
     const [modalInfo, setModalInfo] = useState<SunnahItem | null>(null);
-    const [toastMessage, setToastMessage] = useState('');
+    const [toastMessageState, setToastMessageState] = useState('');
     const [expandedCategories, setExpandedCategories] = useState<string[]>([sunnahData[0]?.category]);
+    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+    const [notificationSettings, setNotificationSettings] = useState({
+        enabled: false,
+        times: { morning: '07:00', friday: '08:00' }
+    });
+
+    setToastMessage = setToastMessageState;
 
     // Load state from localStorage on initial render
     useEffect(() => {
@@ -147,6 +256,13 @@ const App = () => {
         // Custom List
         const savedCustomList = JSON.parse(localStorage.getItem('sunnati-custom-list') || '[]');
         setCustomList(savedCustomList);
+        
+        // Notification Settings
+        const savedNotifSettings = JSON.parse(localStorage.getItem(NOTIFICATION_SETTINGS_KEY) || 'null');
+        if (savedNotifSettings) {
+            setNotificationSettings(savedNotifSettings);
+        }
+
 
         // Streak
         const savedStreak = JSON.parse(localStorage.getItem('sunnati-streak') || '{"count": 0, "lastCompletedDate": null}');
@@ -170,6 +286,8 @@ const App = () => {
     useEffect(() => { localStorage.setItem(`sunnati-progress-${getTodayDateString()}`, JSON.stringify(completedToday)); }, [completedToday]);
     useEffect(() => { localStorage.setItem('sunnati-custom-list', JSON.stringify(customList)); }, [customList]);
     useEffect(() => { localStorage.setItem('sunnati-streak', JSON.stringify(streak)); }, [streak]);
+    useEffect(() => { localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(notificationSettings)); }, [notificationSettings]);
+
     useEffect(() => {
         localStorage.setItem('sunnati-theme', theme);
         document.body.className = `theme-${theme}`;
@@ -179,11 +297,11 @@ const App = () => {
     
     // Toast effect
     useEffect(() => {
-        if (toastMessage) {
-            const timer = setTimeout(() => setToastMessage(''), 3000);
+        if (toastMessageState) {
+            const timer = setTimeout(() => setToastMessageState(''), 3000);
             return () => clearTimeout(timer);
         }
-    }, [toastMessage]);
+    }, [toastMessageState]);
 
     // Derived state for rendering
     const dataToRender = useMemo(() => {
@@ -237,10 +355,10 @@ const App = () => {
         let newCustomList;
         if (customList.includes(sunnahId)) {
             newCustomList = customList.filter(id => id !== sunnahId);
-            setToastMessage('تمت الإزالة من سنني اليومية');
+            setToastMessageState('تمت الإزالة من سنني اليومية');
         } else {
             newCustomList = [...customList, sunnahId];
-            setToastMessage('تمت الإضافة إلى سنني اليومية');
+            setToastMessageState('تمت الإضافة إلى سنني اليومية');
         }
         setCustomList(newCustomList);
     };
@@ -256,6 +374,31 @@ const App = () => {
                 : [...prev, categoryName]
         );
     };
+    
+    const handleNotifToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const isEnabled = e.target.checked;
+        if (isEnabled) {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                setNotificationSettings(prev => ({ ...prev, enabled: true }));
+                scheduleReminders(notificationSettings.times);
+            } else {
+                setToastMessageState('تم رفض إذن الإشعارات.');
+            }
+        } else {
+            setNotificationSettings(prev => ({ ...prev, enabled: false }));
+            cancelReminders();
+        }
+    };
+
+    const handleTimeChange = (type: 'morning' | 'friday', value: string) => {
+        const newTimes = { ...notificationSettings.times, [type]: value };
+        setNotificationSettings(prev => ({ ...prev, times: newTimes }));
+        if (notificationSettings.enabled) {
+            scheduleReminders(newTimes);
+        }
+    };
+
 
     return (
         <>
@@ -281,7 +424,7 @@ const App = () => {
             <main id="sunnah-list-container">
                 {dataToRender.length === 0 && customizeMode ? (
                      <div className="empty-state">
-                        <div className="empty-state-icon">⭐</div>
+                        <div className="empty-state-icon">★</div>
                         <p>قائمتك اليومية فارغة حالياً.<br/>اضغط على النجمة بجانب أي سُنّة لإضافتها هنا والتركيز عليها.</p>
                     </div>
                 ) : (
@@ -302,7 +445,7 @@ const App = () => {
                                                     <span>{item.text}</span>
                                                 </label>
                                                 <div className="sunnah-actions">
-                                                    <button className={`sunnah-btn star-btn ${customList.includes(item.id) ? 'customized' : ''}`} title="إضافة للسنن اليومية" onClick={() => handleStarClick(item.id)}>⭐</button>
+                                                    <button className={`sunnah-btn star-btn ${customList.includes(item.id) ? 'customized' : ''}`} title="إضافة للسنن اليومية" onClick={() => handleStarClick(item.id)}>{customList.includes(item.id) ? '★' : '☆'}</button>
                                                     <button className="sunnah-btn info-btn" title="معلومات إضافية" onClick={() => handleInfoClick(item)}>؟</button>
                                                 </div>
                                             </div>
@@ -326,7 +469,8 @@ const App = () => {
                             <button key={themeName} className={`theme-btn ${theme === themeName ? 'active' : ''}`} data-theme={themeName} title={`الثيم ${themeName}`} onClick={() => setTheme(themeName)}></button>
                         ))}
                     </div>
-                    <button id="customize-btn" className={`control-btn ${customizeMode ? 'active' : ''}`} title="عرض قائمتي اليومية المخصصة" onClick={() => setCustomizeMode(!customizeMode)}>⭐ سنني اليومية</button>
+                     <button className="control-btn" title="إعدادات الإشعارات" onClick={() => setIsNotificationModalOpen(true)}>🔔 الإشعارات</button>
+                    <button id="customize-btn" className={`control-btn ${customizeMode ? 'active' : ''}`} title="عرض قائمتي اليومية المخصصة" onClick={() => setCustomizeMode(!customizeMode)}>★ سنني اليومية</button>
                 </div>
                 <p className="copyright">&copy; 2024 سنتي | Sunnati. كل الحقوق محفوظة.</p>
             </footer>
@@ -341,9 +485,39 @@ const App = () => {
                     </div>
                 </div>
             )}
+            
+            {isNotificationModalOpen && (
+                <div className="modal-overlay" onClick={() => setIsNotificationModalOpen(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                         <button className="modal-close-btn" onClick={() => setIsNotificationModalOpen(false)}>&times;</button>
+                         <h3>إعدادات الإشعارات</h3>
+                         <div className="setting-row">
+                             <label htmlFor="notif-toggle">تفعيل التذكيرات اليومية</label>
+                             <input type="checkbox" id="notif-toggle" className="toggle-switch" checked={notificationSettings.enabled} onChange={handleNotifToggle} />
+                         </div>
+                         {notificationSettings.enabled && (
+                             <>
+                                <div className="setting-row">
+                                     <label htmlFor="morning-time">وقت تذكير الصباح</label>
+                                     <input type="time" id="morning-time" value={notificationSettings.times.morning} onChange={e => handleTimeChange('morning', e.target.value)} />
+                                 </div>
+                                 <div className="setting-row">
+                                     <label htmlFor="friday-time">وقت تذكير الجمعة</label>
+                                     <input type="time" id="friday-time" value={notificationSettings.times.friday} onChange={e => handleTimeChange('friday', e.target.value)} />
+                                 </div>
+                                 <p className="timezone-info">جميع الأوقات حسب توقيت القاهرة.</p>
+                                 <button className="modal-action-btn" onClick={sendTestNotification}>إرسال إشعار تجريبي</button>
+                             </>
+                         )}
+                         {!('showTrigger' in (window.Notification?.prototype || {})) &&
+                            <p className="timezone-info warning">متصفحك لا يدعم جدولة الإشعارات بشكل كامل. قد لا تعمل الميزة كما هو متوقع.</p>
+                         }
+                    </div>
+                </div>
+            )}
 
-            <div id="toast-notification" className={`toast ${toastMessage ? 'show' : ''}`}>
-                {toastMessage}
+            <div id="toast-notification" className={`toast ${toastMessageState ? 'show' : ''}`}>
+                {toastMessageState}
             </div>
         </>
     );

@@ -12,6 +12,7 @@
     --accent-color: #f1c40f;
     --border-color: #e2e8f0;
     --completed-color: #a0aec0;
+    --danger-color: #e53e3e;
 }
 
 body.theme-yellow {
@@ -25,6 +26,7 @@ body.theme-yellow {
     --accent-color: #b8914b;
     --border-color: #e9e2d9;
     --completed-color: #a1958a;
+    --danger-color: #d9534f;
 }
 
 body.theme-dark {
@@ -38,6 +40,7 @@ body.theme-dark {
     --accent-color: #facc15;
     --border-color: #27272a; /* Subtle border for contrast on black */
     --completed-color: #718096;
+    --danger-color: #fc8181;
 }
 
 * {
@@ -280,6 +283,8 @@ input[type="checkbox"] {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .theme-switcher {
@@ -374,7 +379,7 @@ input[type="checkbox"] {
 }
 
 .modal-content h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     color: var(--primary-color);
 }
 .modal-content blockquote {
@@ -403,6 +408,87 @@ input[type="checkbox"] {
     margin-bottom: 0.35rem;
     font-size: 1rem;
 }
+
+/* Notification Modal Specifics */
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.setting-row:last-of-type {
+    border-bottom: none;
+}
+.setting-row label {
+    font-weight: 500;
+}
+input[type="time"] {
+    border: 1px solid var(--border-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+}
+
+.timezone-info {
+    font-size: 0.85rem;
+    text-align: center;
+    color: var(--subtle-text-color);
+    margin: 1rem 0;
+    background-color: var(--bg-color);
+    padding: 0.5rem;
+    border-radius: 6px;
+}
+.timezone-info.warning {
+    color: var(--danger-color);
+}
+.modal-action-btn {
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary-color);
+    color: #fff;
+    font-family: var(--font-family);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Nice Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: var(--border-color);
+    border-radius: 34px;
+    transition: background-color 0.3s;
+    cursor: pointer;
+}
+.toggle-switch::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+.toggle-switch:checked {
+    background-color: var(--primary-color);
+}
+.toggle-switch:checked::before {
+    transform: translateX(22px);
+}
+
 
 
 /* ==== TOAST NOTIFICATION ==== */
