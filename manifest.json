@@ -1,0 +1,22 @@
+{
+  "name": "سنتي | Sunnati",
+  "short_name": "سنتي",
+  "description": "تطبيق ويب تفاعلي يساعد المسلمين على تتبع وتطبيق السنن النبوية اليومية كقائمة مهام.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3498db",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "images/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
