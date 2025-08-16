@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -146,7 +147,7 @@ const handleDailyNotifications = async () => {
             registration.showNotification('☀️ سنن الصباح', {
                 body: 'لا تنسى أذكار الصباح وسنن الاستيقاظ. ابدأ يومك ببركة.',
                 tag: `morning-reminder-${todayStr}`,
-                icon: '/images/icon-192.svg',
+                icon: '/images/icon-192.png',
             });
             localStorage.setItem(LAST_MORNING_NOTIFICATION_KEY, todayStr);
         }
@@ -161,7 +162,7 @@ const handleDailyNotifications = async () => {
                 registration.showNotification('🕌 سنن يوم الجمعة', {
                     body: 'جمعة مباركة! أكثر من الصلاة على النبي واقرأ سورة الكهف.',
                     tag: `friday-reminder-${todayStr}`,
-                    icon: '/images/icon-192.svg',
+                    icon: '/images/icon-192.png',
                 });
                 localStorage.setItem(LAST_FRIDAY_NOTIFICATION_KEY, todayStr);
             }
@@ -175,7 +176,7 @@ const sendTestNotification = () => {
         navigator.serviceWorker.ready.then(registration => {
             registration.showNotification('🔔 إشعار تجريبي', {
                 body: 'إذا رأيت هذا الإشعار، فكل شيء يعمل بنجاح!',
-                icon: '/images/icon-192.svg'
+                icon: '/images/icon-192.png'
             });
         });
         setToastMessage('تم إرسال إشعار تجريبي.');
